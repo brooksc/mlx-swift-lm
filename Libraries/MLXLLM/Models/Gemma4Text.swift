@@ -374,11 +374,13 @@ private class Gemma4Attention: Module {
             var v: MLXArray
             if let vProj {
                 v = vProj(x).reshaped(B, L, nKvHeads, effectiveHeadDim)
+                v = vNorm(v)
+                v = v.transposed(0, 2, 1, 3)
             } else {
-                v = kRaw
+                // k is already transposed to (B, nKvHeads, L, head_dim);
+                // skip the second transpose to avoid reversing it.
+                v = vNorm(k)
             }
-            v = vNorm(v)
-            v = v.transposed(0, 2, 1, 3)
 
             if let quantizedCache = cache as? QuantizedKVCacheProtocol {
                 let (quantizedKeys, quantizedValues) = quantizedCache.updateQuantized(
